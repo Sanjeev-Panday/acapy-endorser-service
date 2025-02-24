@@ -27,6 +27,7 @@ services:
 
   ngrok-endorser-agent:
     image: ngrok/ngrok
+    platform: linux/arm64/v8
     environment:
       - CADDY_AGENT_PORT=${CADDY_AGENT_PORT}
       - CADDY_HOST=${CADDY_HOST}
