@@ -16,7 +16,7 @@ from api.db.models.base import BaseModel
 
 
 class AllowedPublicDid(BaseModel, table=True):
-    """AllowedPublicDid
+    """AllowedPublicDid.
 
     This is the model for the AllowPublicDid table
     (postgresql specific dialects in use).
@@ -44,6 +44,19 @@ class AllowedPublicDid(BaseModel, table=True):
 
 
 def allowed_schema_uuid(context: DefaultExecutionContext):
+    """Generate a UUID for a schema using author DID, schema name, and version.
+
+    This function retrieves the current parameters from the provided context,
+    concatenates the 'author_did', 'schema_name', and 'version' fields, and
+    generates a UUID using the uuid5 algorithm with the NAMESPACE_OID namespace.
+
+    Args:
+        context (DefaultExecutionContext): The execution context that provides
+                                           the current parameters.
+
+    Returns:
+        uuid.UUID: The generated UUID based on the schema's unique attributes.
+    """
     pr = context.get_current_parameters()
     return uuid.uuid5(
         uuid.NAMESPACE_OID,
@@ -51,8 +64,29 @@ def allowed_schema_uuid(context: DefaultExecutionContext):
     )
 
 
+def allowed_log_entry_uuid(context: DefaultExecutionContext):
+    """Generate a UUID for a log entry using domain, namespace, and identifier.
+
+    This function retrieves the current parameters from the provided context,
+    concatenates the 'domain', 'namespace', and 'identifier' fields, and
+    generates a UUID using the uuid5 algorithm with the NAMESPACE_OID namespace.
+
+    Args:
+        context (DefaultExecutionContext): The execution context that provides
+                                           the current parameters.
+
+    Returns:
+        uuid.UUID: The generated UUID based on the log entry's unique attributes.
+    """
+    pr = context.get_current_parameters()
+    return uuid.uuid5(
+        uuid.NAMESPACE_OID,
+        pr["domain"] + pr["namespace"] + pr["identifier"],
+    )
+
+
 class AllowedSchema(BaseModel, table=True):
-    """AllowedSchema
+    """AllowedSchema.
 
     This is the model for the AllowSchema table
     (postgresql specific dialects in use).
@@ -92,6 +126,23 @@ class AllowedSchema(BaseModel, table=True):
 
 
 def allowed_cred_def_uuid(context: DefaultExecutionContext):
+    """Generate a UUID for allowed credential definition using provided context.
+
+    Retrieves current parameters from the context, and constructs a
+    UUID based on the schema issuer DID, credential definition author
+    DID, schema name, version, and tag. The revocation registry
+    definition and entry are not included in the UUID as they describe
+    the capabilities of the credential definition itself, not the
+    credential definition.
+
+    Args:
+        context (DefaultExecutionContext): The execution context
+                                           containing the current parameters.
+
+    Returns:
+        uuid.UUID: The generated UUID for the credential definition.
+
+    """
     pr = context.get_current_parameters()
     return uuid.uuid5(
         uuid.NAMESPACE_OID,
@@ -99,16 +150,12 @@ def allowed_cred_def_uuid(context: DefaultExecutionContext):
         + pr["creddef_author_did"]
         + pr["schema_name"]
         + pr["version"]
-        + pr["tag"]
-        # We don't include rev_reg_def or rev_reg_entry since they
-        # describe what a credential definition supports not the
-        # credential-definition its self
-        ,
+        + pr["tag"],
     )
 
 
 class AllowedCredentialDefinition(BaseModel, table=True):
-    """AllowedCredentialDefinition
+    """AllowedCredentialDefinition.
 
     This is the model for the AllowCredentialDefinition table
     (postgresql specific dialects in use).
@@ -144,6 +191,52 @@ class AllowedCredentialDefinition(BaseModel, table=True):
         sa_column=Column(
             UUID(as_uuid=True),
             default=allowed_cred_def_uuid,
+            primary_key=True,
+        )
+    )
+
+    created_at: datetime = Field(
+        sa_column=Column(TIMESTAMP, nullable=False, server_default=func.now())
+    )
+    updated_at: datetime = Field(
+        sa_column=Column(
+            TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now()
+        )
+    )
+
+
+class AllowedLogEntry(BaseModel, table=True):
+    """AllowedLogEntry for DID WebVH.
+
+    This is the model for the AllowedLogEntry table
+    (postgresql specific dialects in use).
+
+    Attributes:
+      scid:         SCIDs allowed to be registered
+      domain:       Domain allowed to be registered
+      namespace:    Namespace allowed to be registered
+      identifier:   Identifier allowed to be registered
+      version:      WebVH Method version allowed
+      created_at:     Timestamp when record was created
+      updated_at:     Timestamp when record was last modified
+      details:        Additional details related to this schema
+    """
+
+    # acapy data ---
+    scid: str = Field(nullable=False, default=None, primary_key=True)
+    domain: str = Field(nullable=False, default=None)
+    namespace: str = Field(nullable=False, default=None)
+    identifier: str = Field(nullable=False, default=None)
+    version: str = Field(nullable=True, default=None)
+    log_updates: bool = Field(nullable=True, default=False)
+
+    details: str = Field(nullable=True, default=None)
+    # --- acapy data
+
+    allowed_log_entry_id: uuid.UUID = Field(
+        sa_column=Column(
+            UUID(as_uuid=True),
+            default=allowed_log_entry_uuid,
             primary_key=True,
         )
     )

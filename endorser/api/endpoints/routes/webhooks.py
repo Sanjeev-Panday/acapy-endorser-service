@@ -1,21 +1,35 @@
+"""Module for handling Aca-Py WebHook endpoints in the Endorser Agent.
+
+This module defines a FastAPI application and router to process
+incoming webhook events from an Aries Cloudagent (Aca-Py). It provides
+endpoints for validating and processing webhook data based on various
+topics and state changes, and includes dependency injection for
+authentication and database session management. Handlers for different
+webhook topics and states are dynamically invoked from the
+api_services module, and auto-steppers may be used to progress to
+subsequent states.
+
+"""
+
 import logging
 import traceback
 from enum import Enum
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Security
+from fastapi import APIRouter, Depends, HTTPException, Security
 from fastapi.security.api_key import APIKey, APIKeyHeader
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.status import HTTP_403_FORBIDDEN
 
 import api.services as api_services
-from api.core.config import settings
+from api.config import settings
 from api.endpoints.dependencies.db import get_db
 from api.endpoints.models.connections import Connection
 from api.endpoints.models.endorse import EndorseTransaction
+# from api.endpoints.models.witness import WitnessRequest
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(tags=["webhooks"])
 
 api_key_header = APIKeyHeader(
     name=settings.ACAPY_WEBHOOK_URL_API_KEY_NAME, auto_error=False
@@ -23,6 +37,8 @@ api_key_header = APIKeyHeader(
 
 
 class WebhookTopicType(str, Enum):
+    """Enumeration of various webhook topic types for handling different events."""
+
     ping = "ping"
     connections = "connections"
     oob_invitation = "oob-invitation"
@@ -40,28 +56,20 @@ class WebhookTopicType(str, Enum):
     revocation_registry = "revocation-registry"
     revocation_notification = "revocation-notification"
     problem_report = "problem-report"
+    log_entry = "log-entry"
+    attested_resource = "attested-resource"
 
 
 async def get_api_key(
     api_key_header: str = Security(api_key_header),
 ):
+    """Get API key from header and validate against settings."""
     if api_key_header == settings.ACAPY_WEBHOOK_URL_API_KEY:
         return api_key_header
     else:
         raise HTTPException(
             status_code=HTTP_403_FORBIDDEN, detail="Could not validate credentials"
         )
-
-
-def get_webhookapp() -> FastAPI:
-    application = FastAPI(
-        title="WebHooks",
-        description="Endpoints for Aca-Py WebHooks",
-        debug=settings.DEBUG,
-        middleware=None,
-    )
-    application.include_router(router, prefix="")
-    return application
 
 
 @router.post("/topic/{topic}/", response_model=dict | Connection | EndorseTransaction)
@@ -109,4 +117,4 @@ async def process_webhook(
         logger.error(">>> auto-stepper returned error:" + str(e))
         traceback.print_exc()
 
-    return result
+    return result if isinstance(result, dict) else result.model_dump()

@@ -78,6 +78,7 @@ exportEnvironment() {
 
   # endorser aca-py agent
   # export LEDGER_URL=${LEDGER_URL-http://test.bcovrin.vonx.io}
+  export WEBVH_SERVER_URL=${WEBVH_SERVER_URL-https://sandbox.bcvh.vonx.io}
   export LEDGER_URL=${LEDGER_URL-http://${DOCKERHOST}:9000}
   export GENESIS_URL=${GENESIS_URL-${LEDGER_URL}/genesis}
   export TAILS_SERVER_URL=${TAILS_SERVER_URL-http://${DOCKERHOST}:6543}
@@ -89,8 +90,8 @@ exportEnvironment() {
   fi
   export CADDY_AGENT_PORT=2015
   export CADDY_AGENT_ADMIN_PORT=2016
-  export CADDY_HOST=aries-endorser-proxy
-  export ACAPY_AGENT_HOST=aries-endorser-agent
+  export CADDY_HOST=acapy-endorser-proxy
+  export ACAPY_AGENT_HOST=acapy-endorser-agent
   export CADDY_ADMIN_PORT=2019
   export ACAPY_HTTP_PORT=8050
   export ACAPY_HTTP_PORT_EXPOSED=8050
@@ -109,10 +110,10 @@ exportEnvironment() {
   else
     export ACAPY_ADMIN_CONFIG=--admin-insecure-mode
   fi
-  export ENDORSER_ACAPY_ADMIN_URL=http://${DOCKERHOST}:${ACAPY_ADMIN_PORT}
+  export ENDORSER_ACAPY_ADMIN_URL=${ENDORSER_ACAPY_ADMIN_URL-http://${DOCKERHOST}:${ACAPY_ADMIN_PORT}}
 
   # endorser agent db
-  export WALLET_POSTGRESQL_HOST=aries-endorser-wallet
+  export WALLET_POSTGRESQL_HOST=acapy-endorser-wallet
   export WALLET_POSTGRESQL_USER=postgres
   export WALLET_POSTGRESQL_PASSWORD=password
   export WALLET_POSTGRESQL_PORT=5432
@@ -121,17 +122,18 @@ exportEnvironment() {
   # endorser api
   export ENDORSER_SERVICE_PORT=5000
   export ENDORSER_SERVICE_PORT_EXPOSED=5050
-  export ENDORSER_SERVICE_HOST=aries-endorser-api
+  export ENDORSER_SERVICE_HOST=acapy-endorser-api
   export ACAPY_WEBHOOK_URL_API_KEY=change-me
   export ENDORSER_SERVICE_BASE_URL="http://localhost:${ENDORSER_SERVICE_PORT_EXPOSED}"
   export ENDORSER_WEBHOOK_URL="http://${ENDORSER_SERVICE_HOST}:${ENDORSER_SERVICE_PORT}/webhook#${ACAPY_WEBHOOK_URL_API_KEY}"
   export ENDORSER_API_ADMIN_USER=endorser-admin
   export ENDORSER_API_ADMIN_KEY=change-me
+  export ENDORSER_JWT_SECRET_KEY=change-me
 
   # endorser api db
   export POSTGRESQL_USER=postgres
   export POSTGRESQL_PASSWORD=password
-  export CONTROLLER_POSTGRESQL_HOST=aries-endorser-api-db
+  export CONTROLLER_POSTGRESQL_HOST=acapy-endorser-api-db
   export CONTROLLER_POSTGRESQL_USER=endorseruser
   export CONTROLLER_POSTGRESQL_PASSWORD=endorserPass
   export CONTROLLER_POSTGRESQL_ADMIN_USER=endorseradminuser
@@ -160,10 +162,10 @@ exportEnvironment() {
   else
     export ACAPY_AUTHOR_ADMIN_CONFIG=--admin-insecure-mode
   fi
-  export AUTHOR_ACAPY_ADMIN_URL=http://${DOCKERHOST}:${ACAPY_AUTHOR_ADMIN_PORT}
+  export AUTHOR_ACAPY_ADMIN_URL=${AUTHOR_ACAPY_ADMIN_URL-http://${DOCKERHOST}:${ACAPY_AUTHOR_ADMIN_PORT}}
 
   # author agent db
-  export AUTHOR_WALLET_POSTGRESQL_HOST=aries-author-wallet
+  export AUTHOR_WALLET_POSTGRESQL_HOST=acapy-author-wallet
   export AUTHOR_WALLET_POSTGRESQL_USER=postgres
   export AUTHOR_WALLET_POSTGRESQL_PASSWORD=password
   export AUTHOR_POSTGRESQL_PORT=5432
@@ -214,8 +216,8 @@ deleteVolumes() {
 }
 
 # =================================================================================================================
-DEFAULT_CONTAINERS="aries-endorser-proxy ngrok-endorser-agent aries-endorser-agent aries-endorser-wallet aries-endorser-api aries-endorser-api-db"
-TEST_CONTAINERS="aries-author-agent aries-author-wallet"
+DEFAULT_CONTAINERS="acapy-endorser-proxy ngrok-endorser-agent acapy-endorser-agent acapy-endorser-wallet acapy-endorser-api acapy-endorser-api-db"
+TEST_CONTAINERS="acapy-author-agent acapy-author-wallet"
 
 pushd "${SCRIPT_HOME}" >/dev/null
 COMMAND=$(toLower ${1})
